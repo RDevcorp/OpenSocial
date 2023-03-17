@@ -1,13 +1,15 @@
 import models
 from typing import List
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query, Depends
 from fastapi.responses import HTMLResponse
 import json
 import core.config as conf
 import auth as auth_endpoint
 from database import init_models, get_session
 import asyncio
+from fastapi_jwt_auth import AuthJWT
+
 
 app = FastAPI()
 
@@ -29,9 +31,10 @@ html = """
         <ul id='messages'>
         </ul>
         <script>
-            var client_id = Date.now()
+            var client_id = Date.now();
+            var token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJyZXQ3MDIwQGdtYWlsLmNvbSIsImlhdCI6MTY3OTA4ODYxNiwibmJmIjoxNjc5MDg4NjE2LCJqdGkiOiJmZGQ4MWY0Ny05NjI3LTQxMDUtYmUwMS05MzFhY2MyNjNlZTEiLCJleHAiOjE2NzkwODk1MTYsInR5cGUiOiJhY2Nlc3MiLCJmcmVzaCI6dHJ1ZX0.bMyTYXFaGftuis72ZNznw0A4_aJiUEdrkiam6_9OcJM";
             document.querySelector("#ws-id").textContent = client_id;
-            var ws = new WebSocket(`ws://localhost:8080/ws/${client_id}`);
+            var ws = new WebSocket(`ws://localhost:8080/ws/${client_id}?token=${token}`);
             ws.onmessage = function(event) {
                 var messages = document.getElementById('messages')
                 var message = document.createElement('li')
@@ -54,7 +57,6 @@ class WebSocketParser:
     def __init__(self):
         pass
 
-    
 
 class ConnectionManager:
     def __init__(self):
@@ -84,18 +86,19 @@ async def get():
 
 
 @app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
+async def websocket_endpoint(websocket: WebSocket, client_id: int, token: str = Query(...), Authorize: AuthJWT = Depends()):
+    print(token)
+    Authorize.jwt_required("websocket", token=token)
     await manager.connect(websocket)
     try:
         while True:
-            raw_data = await websocket.receive_text()
             try:
-                data = json.loads(raw_data)
+                data = await websocket.receive_json()
                 print(data)
                 for i in range(10):
                     await manager.send_personal_message(f"Answer from server", websocket)
             except json.decoder.JSONDecodeError:
-                await manager.send_personal_message(f"Unprocessable message", websocket)
+               await manager.send_personal_message(f"Unprocessable message", websocket)
             #await manager.broadcast(f"Client #{client_id} says: {data}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)

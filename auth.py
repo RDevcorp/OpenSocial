@@ -28,7 +28,6 @@ router = APIRouter()
 @router.post("/login")
 async def login(user_login: UserLoginSchema, Authorize: AuthJWT = Depends(), session: AsyncSession = Depends(get_session)):
     user = await UsersRepository.get_user_by_email(session, user_login.email)
-    #raise HTTPException(status_code=401, detail="Bad username or password")
     access_token = Authorize.create_access_token(
         subject=user.email, fresh=True)
     refresh_token = Authorize.create_refresh_token(subject=user.email)
