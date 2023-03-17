@@ -1,11 +1,17 @@
+import models
 from typing import List
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import json
 import core.config as conf
+import auth as auth_endpoint
+from database import init_models, get_session
+import asyncio
 
 app = FastAPI()
+
+app.include_router(auth_endpoint.router, tags=['Auth'], prefix='/auth')
 
 html = """
 <!DOCTYPE html>
@@ -98,4 +104,5 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         #await manager.broadcast(f"Client #{client_id} left the chat")
 
 if __name__ == "__main__":
+    # asyncio.run(init_models())
     uvicorn.run("server:app", port=conf.HTTP_PORT, host=conf.HTTP_HOST, reload=True, headers=[("server", "By @ret7020")])
