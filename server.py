@@ -3,6 +3,7 @@ import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import json
+import core.config as conf
 
 app = FastAPI()
 
@@ -85,14 +86,16 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
             try:
                 data = json.loads(raw_data)
                 print(data)
-                await manager.send_personal_message(f"Answer from server", websocket)
+                for i in range(10):
+                    await manager.send_personal_message(f"Answer from server", websocket)
             except json.decoder.JSONDecodeError:
                 await manager.send_personal_message(f"Unprocessable message", websocket)
             #await manager.broadcast(f"Client #{client_id} says: {data}")
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print(f"Client disconnected")
+
         #await manager.broadcast(f"Client #{client_id} left the chat")
 
 if __name__ == "__main__":
-    uvicorn.run("server:app", port=8080, host="0.0.0.0", reload=True, headers=[("server", "By @ret7020")])
+    uvicorn.run("server:app", port=conf.HTTP_PORT, host=conf.HTTP_HOST, reload=True, headers=[("server", "By @ret7020")])
