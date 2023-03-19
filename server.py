@@ -99,12 +99,13 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int, token: str = 
                 await manager.send_personal_message(f"Echo: {data['data']}", websocket)
             except json.decoder.JSONDecodeError:
                 await manager.send_personal_message(f"Unprocessable message", websocket)
-            # await manager.broadcast(f"Client #{client_id} says: {data}")
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         print(f"Client disconnected")
 
 if __name__ == "__main__":
+    # Run to create db arch
     # asyncio.run(init_models())
     uvicorn.run("server:app", port=conf.HTTP_PORT, host=conf.HTTP_HOST,
                 reload=True, headers=[("server", "By @ret7020")])
